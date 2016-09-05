@@ -228,7 +228,7 @@ view model =
                             ++ (padLeft 2 '0' (toString millis))
 
                 _ ->
-                    "--:--.00"
+                    "--:--.--"
 
         solveInfo model =
             div [ class [ Styles.SolveInfoContainer ] ]
