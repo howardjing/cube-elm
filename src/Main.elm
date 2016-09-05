@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Html exposing (div, button, text)
+import Html.Attributes exposing (style)
 import Html.Events exposing (onMouseDown, onMouseUp, onClick)
 import Time exposing (Time, millisecond)
 import Task exposing (Task)
@@ -8,6 +9,7 @@ import Keyboard exposing (KeyCode)
 import Char exposing (toCode)
 import Html.App as App
 import MainCss as Styles
+import String exposing (padLeft)
 
 
 main : Program Never
@@ -146,12 +148,12 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     if isInspecting model then
         Sub.batch
-            [ Time.every (100 * millisecond) TickInspection
+            [ Time.every (1 * millisecond) TickInspection
             , Keyboard.ups KeyStartSolve
             ]
     else if isSolving model then
         Sub.batch
-            [ Time.every (100 * millisecond) TickSolve
+            [ Time.every (1 * millisecond) TickSolve
             , Keyboard.downs KeyStopSolve
             ]
     else
@@ -171,26 +173,91 @@ view model =
                     [ class [ Styles.Button ]
                     , onMouseUp recordStartSolve
                     ]
-                    [ text "Release space to start solving" ]
+                    [ text "Release space when finished inspecting" ]
             else if isSolving model then
                 button
                     [ class [ Styles.Button ]
                     , onClick recordStopSolve
                     ]
-                    [ text "Press space to stop solving" ]
+                    [ text "Press space when finished solving" ]
             else
                 button
                     [ class [ Styles.Button ]
                     , onMouseDown recordStartInspection
                     ]
-                    [ text "Press and hold space to start inspecting" ]
+                    [ text "Hold space to start inspecting" ]
 
         timer millis =
-            div [] [ text (toString millis) ]
+            div
+                [ class [ Styles.Timer ]
+                ]
+                [ text (elapsedTime (Just millis)) ]
+
+        -- elapsedTime : Maybe Float -> String
+        elapsedTime : Maybe Float -> String
+        elapsedTime time =
+            case time of
+                Just time ->
+                    let
+                        timeInt =
+                            round time
+
+                        millisRaw =
+                            (timeInt % 1000)
+
+                        -- only display two digits of precision
+                        millis =
+                            if millisRaw % 10 > 5 then
+                                (millisRaw // 10 + 1) % 100
+                            else
+                                millisRaw // 10
+
+                        secondsRaw =
+                            timeInt // 1000
+
+                        seconds =
+                            secondsRaw % 60
+
+                        minutes =
+                            secondsRaw // 60
+                    in
+                        (padLeft 2 '0' (toString minutes))
+                            ++ ":"
+                            ++ (padLeft 2 '0' (toString seconds))
+                            ++ "."
+                            ++ (padLeft 2 '0' (toString millis))
+
+                _ ->
+                    "--:--.00"
+
+        solveInfo model =
+            div [ class [ Styles.SolveInfoContainer ] ]
+                [ div
+                    [ class [ Styles.SolveInfo ]
+                    , style [ ( "justifyContent", "space-between" ) ]
+                    ]
+                    [ div [] [ text "Inspection time:" ]
+                    , div
+                        [ class [ Styles.SolveInfoTime ] ]
+                        [ text (elapsedTime model.inspectionTime) ]
+                    ]
+                , div
+                    [ class [ Styles.SolveInfo ]
+                    , style [ ( "justifyContent", "space-between" ) ]
+                    ]
+                    [ div [] [ text "Solve time:" ]
+                    , div
+                        [ class [ Styles.SolveInfoTime ] ]
+                        [ text (elapsedTime model.solveTime) ]
+                    ]
+                ]
     in
-        div []
+        div
+            [ class [ Styles.Container ]
+              {--elm-css doesn't support justifyContent--}
+            , style [ ( "justifyContent", "center" ) ]
+            ]
             [ timer model.elapsed
             , renderButton
-            , div [] [ text ("inspection time: " ++ (toString model.inspectionTime)) ]
-            , div [] [ text ("solve time: " ++ (toString model.solveTime)) ]
+            , solveInfo model
             ]
