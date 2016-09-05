@@ -19,10 +19,19 @@ import Css
         , marginRight
         , marginBottom
         , margin
-        , padding
+        , padding2
         , minWidth
         , width
         , fontFamilies
+        , solid
+        , border3
+        , borderRadius
+        , hex
+        , property
+        , cursor
+        , pointer
+        , outline
+        , zero
         )
 import Css.Namespace
 import Html.CssHelpers exposing (withNamespace)
@@ -44,12 +53,17 @@ type CssClasses
 css =
     (stylesheet << Css.Namespace.namespace namespace.name)
         [ ((.) Button)
-            [ width (px 250)
-            , backgroundColor (hex "ccffaa")
-            , padding (px 10)
+            [ width (px 350)
+            , border3 (px 1) solid (hex "000")
+            , borderRadius (px 5)
+            , backgroundColor (hex "fff")
+            , padding2 (px 15) (px 0)
+            , fontSize (px 16)
+            , cursor pointer
+            , outline zero
             ]
         , ((.) Timer)
-            [ fontFamilies [ "monospace" ]
+            [ fontFamilies [ "Roboto Mono", "monospace" ]
             , fontSize (px 72)
             , marginBottom (px 10)
             ]
@@ -58,17 +72,19 @@ css =
             , flexDirection column
             , alignItems center
             , flex (int 1)
+            , property "justify-content" "center"
             ]
         , ((.) SolveInfoContainer)
             [ displayFlex
             , flexDirection column
-            , minWidth (px 180)
+            , minWidth (px 200)
             , margin (px 20)
             ]
         , ((.) SolveInfo)
             [ displayFlex
+            , property "justify-content" "space-between"
             ]
         , ((.) SolveInfoTime)
-            [ fontFamilies [ "monospace" ]
+            [ fontFamilies [ "Roboto Mono", "monospace" ]
             ]
         ]

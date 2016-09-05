@@ -233,18 +233,14 @@ view model =
         solveInfo model =
             div [ class [ Styles.SolveInfoContainer ] ]
                 [ div
-                    [ class [ Styles.SolveInfo ]
-                    , style [ ( "justifyContent", "space-between" ) ]
-                    ]
+                    [ class [ Styles.SolveInfo ] ]
                     [ div [] [ text "Inspection time:" ]
                     , div
                         [ class [ Styles.SolveInfoTime ] ]
                         [ text (elapsedTime model.inspectionTime) ]
                     ]
                 , div
-                    [ class [ Styles.SolveInfo ]
-                    , style [ ( "justifyContent", "space-between" ) ]
-                    ]
+                    [ class [ Styles.SolveInfo ] ]
                     [ div [] [ text "Solve time:" ]
                     , div
                         [ class [ Styles.SolveInfoTime ] ]
@@ -254,8 +250,6 @@ view model =
     in
         div
             [ class [ Styles.Container ]
-              {--elm-css doesn't support justifyContent--}
-            , style [ ( "justifyContent", "center" ) ]
             ]
             [ timer model.elapsed
             , renderButton
