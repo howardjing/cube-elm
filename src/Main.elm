@@ -7,6 +7,17 @@ import Task exposing (Task)
 import Keyboard exposing (KeyCode)
 import Char exposing (toCode)
 import Html.App as App
+import MainCss as Styles
+
+
+main : Program Never
+main =
+    App.program
+        { init = ( initialModel, Cmd.none )
+        , view = view
+        , update = update
+        , subscriptions = subscriptions
+        }
 
 
 type alias Model =
@@ -109,28 +120,6 @@ recordStopSolve =
     WithTime (\time -> StopSolve time)
 
 
-view : Model -> Html.Html Msg
-view model =
-    let
-        renderButton =
-            if isInspecting model then
-                button [ onMouseUp recordStartSolve ] [ text "Release space to start solving" ]
-            else if isSolving model then
-                button [ onClick recordStopSolve ] [ text "Press space to stop solving" ]
-            else
-                button [ onMouseDown recordStartInspection ] [ text "Press and hold space to start inspecting" ]
-
-        timer millis =
-            div [] [ text (toString millis) ]
-    in
-        div []
-            [ timer model.elapsed
-            , renderButton
-            , div [] [ text ("inspection time: " ++ (toString model.inspectionTime)) ]
-            , div [] [ text ("solve time: " ++ (toString model.solveTime)) ]
-            ]
-
-
 isNothing : Maybe a -> Bool
 isNothing maybe =
     case maybe of
@@ -171,11 +160,37 @@ subscriptions model =
             ]
 
 
-main : Program Never
-main =
-    App.program
-        { init = ( initialModel, Cmd.none )
-        , view = view
-        , update = update
-        , subscriptions = subscriptions
-        }
+{ class } =
+    Styles.namespace
+view : Model -> Html.Html Msg
+view model =
+    let
+        renderButton =
+            if isInspecting model then
+                button
+                    [ class [ Styles.Button ]
+                    , onMouseUp recordStartSolve
+                    ]
+                    [ text "Release space to start solving" ]
+            else if isSolving model then
+                button
+                    [ class [ Styles.Button ]
+                    , onClick recordStopSolve
+                    ]
+                    [ text "Press space to stop solving" ]
+            else
+                button
+                    [ class [ Styles.Button ]
+                    , onMouseDown recordStartInspection
+                    ]
+                    [ text "Press and hold space to start inspecting" ]
+
+        timer millis =
+            div [] [ text (toString millis) ]
+    in
+        div []
+            [ timer model.elapsed
+            , renderButton
+            , div [] [ text ("inspection time: " ++ (toString model.inspectionTime)) ]
+            , div [] [ text ("solve time: " ++ (toString model.solveTime)) ]
+            ]
