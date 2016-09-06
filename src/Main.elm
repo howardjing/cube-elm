@@ -280,15 +280,8 @@ view model =
                         timeInt =
                             round time
 
-                        millisRaw =
-                            (timeInt % 1000)
-
-                        -- only display two digits of precision
                         millis =
-                            if millisRaw % 10 > 5 then
-                                (millisRaw // 10 + 1) % 100
-                            else
-                                millisRaw // 10
+                            (timeInt % 1000)
 
                         secondsRaw =
                             timeInt // 1000
@@ -303,10 +296,10 @@ view model =
                             ++ ":"
                             ++ (padLeft 2 '0' (toString seconds))
                             ++ "."
-                            ++ (padLeft 2 '0' (toString millis))
+                            ++ (padLeft 3 '0' (toString millis))
 
                 _ ->
-                    "--:--.--"
+                    "--:--.---"
 
         solveInfo : CurrentSolve -> Html.Html Msg
         solveInfo current =
