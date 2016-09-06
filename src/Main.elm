@@ -1,6 +1,6 @@
 module Main exposing (main)
 
-import Html exposing (div, button, text)
+import Html exposing (div, button, text, h3, ol, li)
 import Html.Events exposing (onMouseDown, onMouseUp, onClick)
 import Time exposing (Time, millisecond)
 import Task exposing (Task)
@@ -308,7 +308,8 @@ view model =
                 _ ->
                     "--:--.--"
 
-        solveInfo model =
+        solveInfo : CurrentSolve -> Html.Html Msg
+        solveInfo current =
             div [ class [ Styles.SolveInfoContainer ] ]
                 [ div
                     [ class [ Styles.SolveInfo ] ]
@@ -325,11 +326,35 @@ view model =
                         [ text (elapsedTime current.solveTime) ]
                     ]
                 ]
+
+        renderSolves list =
+            let
+                solves =
+                    List.take 10 list
+            in
+                if List.length list == 0 then
+                    div [] []
+                else
+                    div [ class [ Styles.SolvesListContainer ] ]
+                        [ h3 []
+                            [ text "Previous Solves" ]
+                        , ol
+                            [ class [ Styles.SolvesList ] ]
+                            (List.map
+                                (\solve ->
+                                    li [] [ text (elapsedTime (Just solve.solveTime)) ]
+                                )
+                                solves
+                            )
+                        ]
     in
         div
-            [ class [ Styles.Container ]
-            ]
-            [ timer current.elapsed
-            , renderButton
-            , solveInfo model
+            [ class [ Styles.Container ] ]
+            [ div
+                [ class [ Styles.TimerContainer ] ]
+                [ timer current.elapsed
+                , renderButton
+                , solveInfo current
+                ]
+            , (renderSolves model.solves)
             ]

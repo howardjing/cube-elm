@@ -12,6 +12,7 @@ import Css
         , flexDirection
         , center
         , column
+        , row
         , fontSize
         , px
         , flex
@@ -19,7 +20,9 @@ import Css
         , marginRight
         , marginBottom
         , margin
+        , padding
         , padding2
+        , padding4
         , minWidth
         , width
         , fontFamilies
@@ -32,6 +35,11 @@ import Css
         , pointer
         , outline
         , zero
+        , position
+        , fixed
+        , top
+        , right
+        , none
         )
 import Css.Namespace
 import Html.CssHelpers exposing (withNamespace)
@@ -43,11 +51,15 @@ namespace =
 
 type CssClasses
     = Button
-    | Timer
     | Container
+    | TimerContainer
+    | Timer
     | SolveInfoContainer
     | SolveInfo
     | SolveInfoTime
+      -- solves list
+    | SolvesListContainer
+    | SolvesList
 
 
 css =
@@ -69,6 +81,11 @@ css =
             ]
         , ((.) Container)
             [ displayFlex
+            , flexDirection row
+            , flex (int 1)
+            ]
+        , ((.) TimerContainer)
+            [ displayFlex
             , flexDirection column
             , alignItems center
             , flex (int 1)
@@ -86,5 +103,16 @@ css =
             ]
         , ((.) SolveInfoTime)
             [ fontFamilies [ "Roboto Mono", "monospace" ]
+            ]
+          -- Solves List
+        , ((.) SolvesListContainer)
+            [ position fixed
+            , top zero
+            , right zero
+            , padding (px 20)
+            ]
+        , ((.) SolvesList)
+            [ margin zero
+            , padding4 (px 0) (px 0) (px 0) (px 20)
             ]
         ]
