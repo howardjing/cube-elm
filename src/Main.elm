@@ -1,7 +1,6 @@
 module Main exposing (main)
 
 import Html exposing (div, button, text)
-import Html.Attributes exposing (style)
 import Html.Events exposing (onMouseDown, onMouseUp, onClick)
 import Time exposing (Time, millisecond)
 import Task exposing (Task)
@@ -22,7 +21,7 @@ main =
         }
 
 
-type alias Model =
+type alias CurrentSolve =
     { start : Maybe Time
     , inspectionTime : Maybe Float
     , solveTime : Maybe Float
@@ -30,12 +29,32 @@ type alias Model =
     }
 
 
-initialModel : Model
-initialModel =
+type alias Solve =
+    { start : Time
+    , inspectionTime : Float
+    , solveTime : Float
+    }
+
+
+type alias Model =
+    { current : CurrentSolve
+    , solves : List Solve
+    }
+
+
+initialSolve : CurrentSolve
+initialSolve =
     { start = Nothing
     , inspectionTime = Nothing
     , solveTime = Nothing
     , elapsed = 0
+    }
+
+
+initialModel : Model
+initialModel =
+    { current = initialSolve
+    , solves = []
     }
 
 
@@ -44,6 +63,7 @@ type Msg
     | StartInspection Time
     | StartSolve Time
     | StopSolve Time
+    | AddSolve
     | TickInspection Time
     | TickSolve Time
     | KeyStartInspection KeyCode
@@ -56,34 +76,85 @@ perform msg =
     Task.perform identity (\_ -> msg) (Task.succeed Nothing)
 
 
-startSolve : Model -> Float
-startSolve model =
-    Maybe.withDefault 0 (Maybe.map2 (+) model.start model.inspectionTime)
+startSolveTime : CurrentSolve -> Float
+startSolveTime solve =
+    Maybe.withDefault 0 (Maybe.map2 (+) solve.start solve.inspectionTime)
+
+
+
+-- TODO: can refactor out a lot of the repetitive logic of updating the current solve
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         StartInspection time ->
-            ( { initialModel | start = Just time }, Cmd.none )
+            let
+                newSolve =
+                    { initialSolve | start = Just time }
+            in
+                ( { model | current = newSolve }, Cmd.none )
 
         StartSolve time ->
-            ( { model
-                | inspectionTime = Maybe.map (\start -> time - start) model.start
-              }
-            , perform (TickInspection time)
-            )
+            let
+                { current } =
+                    model
+
+                updatedSolve =
+                    { current | inspectionTime = Maybe.map (\start -> time - start) current.start }
+            in
+                ( { model | current = updatedSolve }
+                , perform (TickInspection time)
+                )
 
         StopSolve time ->
-            ( { model | solveTime = Just (time - (startSolve model)) }
-            , perform (TickSolve time)
-            )
+            let
+                { current } =
+                    model
+
+                updatedSolve =
+                    { current | solveTime = Just (time - (startSolveTime current)) }
+            in
+                ( { model | current = updatedSolve }
+                , Cmd.batch
+                    [ perform (TickSolve time)
+                    , perform AddSolve
+                    ]
+                )
+
+        AddSolve ->
+            -- TODO: refactor to only push a solve if all values are present
+            let
+                { current } =
+                    model
+
+                solve =
+                    { start = Maybe.withDefault 0 current.start
+                    , inspectionTime = Maybe.withDefault 0 current.inspectionTime
+                    , solveTime = Maybe.withDefault 0 current.solveTime
+                    }
+            in
+                ( { model | solves = solve :: model.solves }, Cmd.none )
 
         TickInspection time ->
-            ( { model | elapsed = time - (Maybe.withDefault 0 model.start) }, Cmd.none )
+            let
+                { current } =
+                    model
+
+                updatedSolve =
+                    { current | elapsed = time - (Maybe.withDefault 0 current.start) }
+            in
+                ( { model | current = updatedSolve }, Cmd.none )
 
         TickSolve time ->
-            ( { model | elapsed = time - (startSolve model) }, Cmd.none )
+            let
+                { current } =
+                    model
+
+                updatedSolve =
+                    { current | elapsed = time - (startSolveTime current) }
+            in
+                ( { model | current = updatedSolve }, Cmd.none )
 
         WithTime handleTime ->
             ( model, (Task.perform identity handleTime Time.now) )
@@ -132,12 +203,12 @@ isNothing maybe =
             False
 
 
-isInspecting : Model -> Bool
+isInspecting : CurrentSolve -> Bool
 isInspecting model =
     (not (isNothing model.start)) && (isNothing model.inspectionTime)
 
 
-isSolving : Model -> Bool
+isSolving : CurrentSolve -> Bool
 isSolving model =
     (not (isNothing model.start))
         && (not (isNothing model.inspectionTime))
@@ -146,20 +217,24 @@ isSolving model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    if isInspecting model then
-        Sub.batch
-            [ Time.every (1 * millisecond) TickInspection
-            , Keyboard.ups KeyStartSolve
-            ]
-    else if isSolving model then
-        Sub.batch
-            [ Time.every (1 * millisecond) TickSolve
-            , Keyboard.downs KeyStopSolve
-            ]
-    else
-        Sub.batch
-            [ Keyboard.downs KeyStartInspection
-            ]
+    let
+        { current } =
+            model
+    in
+        if isInspecting current then
+            Sub.batch
+                [ Time.every (1 * millisecond) TickInspection
+                , Keyboard.ups KeyStartSolve
+                ]
+        else if isSolving current then
+            Sub.batch
+                [ Time.every (1 * millisecond) TickSolve
+                , Keyboard.downs KeyStopSolve
+                ]
+        else
+            Sub.batch
+                [ Keyboard.downs KeyStartInspection
+                ]
 
 
 { class } =
@@ -167,14 +242,17 @@ subscriptions model =
 view : Model -> Html.Html Msg
 view model =
     let
+        { current } =
+            model
+
         renderButton =
-            if isInspecting model then
+            if isInspecting current then
                 button
                     [ class [ Styles.Button ]
                     , onMouseUp recordStartSolve
                     ]
                     [ text "Release space when finished inspecting" ]
-            else if isSolving model then
+            else if isSolving current then
                 button
                     [ class [ Styles.Button ]
                     , onClick recordStopSolve
@@ -237,21 +315,21 @@ view model =
                     [ div [] [ text "Inspection time:" ]
                     , div
                         [ class [ Styles.SolveInfoTime ] ]
-                        [ text (elapsedTime model.inspectionTime) ]
+                        [ text (elapsedTime current.inspectionTime) ]
                     ]
                 , div
                     [ class [ Styles.SolveInfo ] ]
                     [ div [] [ text "Solve time:" ]
                     , div
                         [ class [ Styles.SolveInfoTime ] ]
-                        [ text (elapsedTime model.solveTime) ]
+                        [ text (elapsedTime current.solveTime) ]
                     ]
                 ]
     in
         div
             [ class [ Styles.Container ]
             ]
-            [ timer model.elapsed
+            [ timer current.elapsed
             , renderButton
             , solveInfo model
             ]
