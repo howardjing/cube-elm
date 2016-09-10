@@ -38,8 +38,11 @@ import Css
         , position
         , fixed
         , top
+        , left
         , right
         , none
+        , opacity
+        , int
         )
 import Css.Namespace
 import Html.CssHelpers exposing (withNamespace)
@@ -57,9 +60,15 @@ type CssClasses
     | SolveInfoContainer
     | SolveInfo
     | SolveInfoTime
+    | Active
+    | Inactive
       -- solves list
     | SolvesListContainer
     | SolvesList
+      -- scramble
+    | ScrambleContainer
+    | Scramble
+    | ScrambleMove
 
 
 css =
@@ -104,6 +113,14 @@ css =
         , ((.) SolveInfoTime)
             [ fontFamilies [ "Roboto Mono", "monospace" ]
             ]
+        , ((.) Inactive)
+            [ opacity zero
+            , property "transition" "opacity 0.5s ease-out"
+            ]
+        , ((.) Active)
+            [ opacity (int 1)
+            , property "transition" "opacity 0.2s ease-in"
+            ]
           -- Solves List
         , ((.) SolvesListContainer)
             [ position fixed
@@ -115,4 +132,19 @@ css =
             [ margin zero
             , padding4 (px 0) (px 0) (px 0) (px 20)
             ]
+          -- Scramble
+        , ((.) ScrambleContainer)
+            [ position fixed
+            , top zero
+            , left zero
+            , padding (px 20)
+            ]
+        , ((.) Scramble)
+            [ displayFlex
+            , margin zero
+            , padding zero
+            , property "list-style-type" "none"
+            ]
+        , ((.) ScrambleMove)
+            [ marginRight (px 5) ]
         ]

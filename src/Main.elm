@@ -1,6 +1,6 @@
 module Main exposing (main)
 
-import Html exposing (div, button, text, h3, ol, li)
+import Html exposing (div, button, text, h3, ul, ol, li)
 import Html.Events exposing (onMouseDown, onMouseUp, onClick)
 import Time exposing (Time, millisecond)
 import Task exposing (Task)
@@ -9,12 +9,14 @@ import Char exposing (toCode)
 import Html.App as App
 import MainCss as Styles
 import String exposing (padLeft)
+import Scramble exposing (scramble, Move)
+import Random exposing (initialSeed)
 
 
 main : Program Never
 main =
     App.program
-        { init = ( initialModel, Cmd.none )
+        { init = init
         , view = view
         , update = update
         , subscriptions = subscriptions
@@ -33,13 +35,24 @@ type alias Solve =
     { start : Time
     , inspectionTime : Float
     , solveTime : Float
+    , scramble : List Move
     }
 
 
 type alias Model =
     { current : CurrentSolve
     , solves : List Solve
+    , scramble : Maybe (List Move)
     }
+
+
+init : ( Model, Cmd Msg )
+init =
+    ( initialModel
+    , Cmd.batch
+        [ perform requestScramble
+        ]
+    )
 
 
 initialSolve : CurrentSolve
@@ -55,6 +68,7 @@ initialModel : Model
 initialModel =
     { current = initialSolve
     , solves = []
+    , scramble = Nothing
     }
 
 
@@ -69,6 +83,7 @@ type Msg
     | KeyStartInspection KeyCode
     | KeyStartSolve KeyCode
     | KeyStopSolve KeyCode
+    | Scramble Float
 
 
 perform : Msg -> Cmd Msg
@@ -81,6 +96,19 @@ startSolveTime solve =
     Maybe.withDefault 0 (Maybe.map2 (+) solve.start solve.inspectionTime)
 
 
+finalizeSolve : Model -> Solve
+finalizeSolve model =
+    let
+        { current, scramble } =
+            model
+    in
+        { start = Maybe.withDefault 0 current.start
+        , inspectionTime = Maybe.withDefault 0 current.inspectionTime
+        , solveTime = Maybe.withDefault 0 current.solveTime
+        , scramble = Maybe.withDefault [] scramble
+        }
+
+
 
 -- TODO: can refactor out a lot of the repetitive logic of updating the current solve
 
@@ -88,6 +116,13 @@ startSolveTime solve =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Scramble time ->
+            let
+                complexity =
+                    25
+            in
+                ( { model | scramble = Just (scramble (initialSeed (round time)) complexity) }, Cmd.none )
+
         StartInspection time ->
             let
                 newSolve =
@@ -119,20 +154,18 @@ update msg model =
                 , Cmd.batch
                     [ perform (TickSolve time)
                     , perform AddSolve
+                    , perform requestScramble
                     ]
                 )
 
         AddSolve ->
             -- TODO: refactor to only push a solve if all values are present
             let
-                { current } =
+                { current, scramble } =
                     model
 
                 solve =
-                    { start = Maybe.withDefault 0 current.start
-                    , inspectionTime = Maybe.withDefault 0 current.inspectionTime
-                    , solveTime = Maybe.withDefault 0 current.solveTime
-                    }
+                    finalizeSolve model
             in
                 ( { model | solves = solve :: model.solves }, Cmd.none )
 
@@ -191,6 +224,11 @@ recordStartSolve =
 recordStopSolve : Msg
 recordStopSolve =
     WithTime (\time -> StopSolve time)
+
+
+requestScramble : Msg
+requestScramble =
+    WithTime (\time -> Scramble time)
 
 
 isNothing : Maybe a -> Bool
@@ -320,6 +358,35 @@ view model =
                     ]
                 ]
 
+        active =
+            not (isInspecting current) && not (isSolving current)
+
+        renderScramble scramble =
+            case scramble of
+                Just moves ->
+                    div
+                        [ class
+                            [ Styles.ScrambleContainer
+                            , if active then
+                                Styles.Active
+                              else
+                                Styles.Inactive
+                            ]
+                        ]
+                        [ h3 [] [ text "Scramble" ]
+                        , ul
+                            [ class [ Styles.Scramble ] ]
+                            (List.map
+                                (\move ->
+                                    li [ class [ Styles.ScrambleMove ] ] [ text (toString move) ]
+                                )
+                                moves
+                            )
+                        ]
+
+                _ ->
+                    div [] []
+
         renderSolves list =
             let
                 solves =
@@ -328,7 +395,15 @@ view model =
                 if List.length list == 0 then
                     div [] []
                 else
-                    div [ class [ Styles.SolvesListContainer ] ]
+                    div
+                        [ class
+                            [ Styles.SolvesListContainer
+                            , if active then
+                                Styles.Active
+                              else
+                                Styles.Inactive
+                            ]
+                        ]
                         [ h3 []
                             [ text "Previous Solves" ]
                         , ol
@@ -343,11 +418,12 @@ view model =
     in
         div
             [ class [ Styles.Container ] ]
-            [ div
+            [ renderScramble model.scramble
+            , div
                 [ class [ Styles.TimerContainer ] ]
                 [ timer current.elapsed
                 , renderButton
                 , solveInfo current
                 ]
-            , (renderSolves model.solves)
+            , renderSolves model.solves
             ]
