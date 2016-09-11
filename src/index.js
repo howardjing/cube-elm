@@ -38,6 +38,6 @@ function latestSolves() {
   return db.solves
     .orderBy('start')
     .reverse()
-    .limit(10)
+    .limit(12)
     .toArray();
 }

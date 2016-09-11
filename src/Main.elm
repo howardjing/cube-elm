@@ -302,6 +302,33 @@ subscriptions model =
                        ]
 
 
+mean : List Float -> Maybe Float
+mean list =
+    if List.length list == 0 then
+        Nothing
+    else
+        Just <| (List.sum list) / (toFloat (List.length list))
+
+
+avg : List Float -> Maybe Float
+avg list =
+    if List.length list <= 2 then
+        Nothing
+    else
+        let
+            len =
+                List.length list
+
+            pruned =
+                list
+                    |> List.sort
+                    |> List.tail
+                    |> Maybe.withDefault []
+                    |> List.take (len - 2)
+        in
+            mean pruned
+
+
 { class } =
     Styles.namespace
 view : Model -> Html.Html Msg
@@ -334,7 +361,10 @@ view model =
             div
                 [ class [ Styles.Timer ]
                 ]
-                [ text (elapsedTime (Just millis)) ]
+                [ Just millis
+                    |> elapsedTime
+                    |> text
+                ]
 
         -- elapsedTime : Maybe Float -> String
         elapsedTime : Maybe Float -> String
@@ -374,14 +404,20 @@ view model =
                     [ div [] [ text "Inspection time:" ]
                     , div
                         [ class [ Styles.SolveInfoTime ] ]
-                        [ text (elapsedTime current.inspectionTime) ]
+                        [ current.inspectionTime
+                            |> elapsedTime
+                            |> text
+                        ]
                     ]
                 , div
                     [ class [ Styles.SolveInfo ] ]
                     [ div [] [ text "Solve time:" ]
                     , div
                         [ class [ Styles.SolveInfoTime ] ]
-                        [ text (elapsedTime current.solveTime) ]
+                        [ current.solveTime
+                            |> elapsedTime
+                            |> text
+                        ]
                     ]
                 ]
 
@@ -405,7 +441,12 @@ view model =
                             [ class [ Styles.Scramble ] ]
                             (List.map
                                 (\move ->
-                                    li [ class [ Styles.ScrambleMove ] ] [ text (toString move) ]
+                                    li
+                                        [ class [ Styles.ScrambleMove ] ]
+                                        [ move
+                                            |> toString
+                                            |> text
+                                        ]
                                 )
                                 moves
                             )
@@ -414,10 +455,13 @@ view model =
                 _ ->
                     div [] []
 
+        renderSolves : List Solve -> Html.Html Msg
         renderSolves list =
             let
                 solves =
-                    List.take 10 list
+                    list
+                        |> List.take 12
+                        |> List.map .solveTime
             in
                 if List.length list == 0 then
                     div [] []
@@ -437,10 +481,33 @@ view model =
                             [ class [ Styles.SolvesList ] ]
                             (List.map
                                 (\solve ->
-                                    li [] [ text (elapsedTime (Just solve.solveTime)) ]
+                                    li []
+                                        [ Just solve
+                                            |> elapsedTime
+                                            |> text
+                                        ]
                                 )
                                 solves
                             )
+                        , div
+                            [ class [ Styles.SolvesListStats ] ]
+                            [ div
+                                [ class [] ]
+                                [ solves
+                                    |> List.minimum
+                                    |> elapsedTime
+                                    |> (++) "min: "
+                                    |> text
+                                ]
+                            , div
+                                [ class [] ]
+                                [ solves
+                                    |> avg
+                                    |> elapsedTime
+                                    |> (++) "avg: "
+                                    |> text
+                                ]
+                            ]
                         ]
     in
         div

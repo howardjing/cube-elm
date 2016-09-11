@@ -65,6 +65,7 @@ type CssClasses
       -- solves list
     | SolvesListContainer
     | SolvesList
+    | SolvesListStats
       -- scramble
     | ScrambleContainer
     | Scramble
@@ -130,7 +131,10 @@ css =
             ]
         , ((.) SolvesList)
             [ margin zero
-            , padding4 (px 0) (px 0) (px 0) (px 20)
+            , padding4 (px 0) (px 0) (px 0) (px 16)
+            ]
+        , ((.) SolvesListStats)
+            [ padding2 (px 20) zero
             ]
           -- Scramble
         , ((.) ScrambleContainer)
