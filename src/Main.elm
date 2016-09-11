@@ -1,4 +1,4 @@
-module Main exposing (main)
+port module Main exposing (main)
 
 import Html exposing (div, button, text, h3, ul, ol, li)
 import Html.Events exposing (onMouseDown, onMouseUp, onClick)
@@ -23,6 +23,15 @@ main =
         }
 
 
+port requestLatestSolves : () -> Cmd msg
+
+
+port createSolve : Solve -> Cmd msg
+
+
+port setLatestSolves : (List Solve -> msg) -> Sub msg
+
+
 type alias CurrentSolve =
     { start : Maybe Time
     , inspectionTime : Maybe Float
@@ -35,7 +44,8 @@ type alias Solve =
     { start : Time
     , inspectionTime : Float
     , solveTime : Float
-    , scramble : List Move
+    , scramble : List String
+    , tags : List String
     }
 
 
@@ -51,6 +61,7 @@ init =
     ( initialModel
     , Cmd.batch
         [ perform requestScramble
+        , requestLatestSolves ()
         ]
     )
 
@@ -77,13 +88,15 @@ type Msg
     | StartInspection Time
     | StartSolve Time
     | StopSolve Time
-    | AddSolve
+    | CreateSolve
     | TickInspection Time
     | TickSolve Time
     | KeyStartInspection KeyCode
     | KeyStartSolve KeyCode
     | KeyStopSolve KeyCode
     | Scramble Float
+    | RequestLatestSolves
+    | SetLatestSolves (List Solve)
 
 
 perform : Msg -> Cmd Msg
@@ -105,7 +118,8 @@ finalizeSolve model =
         { start = Maybe.withDefault 0 current.start
         , inspectionTime = Maybe.withDefault 0 current.inspectionTime
         , solveTime = Maybe.withDefault 0 current.solveTime
-        , scramble = Maybe.withDefault [] scramble
+        , scramble = []
+        , tags = []
         }
 
 
@@ -153,12 +167,12 @@ update msg model =
                 ( { model | current = updatedSolve }
                 , Cmd.batch
                     [ perform (TickSolve time)
-                    , perform AddSolve
+                    , perform CreateSolve
                     , perform requestScramble
                     ]
                 )
 
-        AddSolve ->
+        CreateSolve ->
             -- TODO: refactor to only push a solve if all values are present
             let
                 { current, scramble } =
@@ -167,7 +181,13 @@ update msg model =
                 solve =
                     finalizeSolve model
             in
-                ( { model | solves = solve :: model.solves }, Cmd.none )
+                ( { model | solves = solve :: model.solves }, createSolve solve )
+
+        RequestLatestSolves ->
+            ( model, requestLatestSolves () )
+
+        SetLatestSolves solves ->
+            ( { model | solves = solves }, Cmd.none )
 
         TickInspection time ->
             let
@@ -258,21 +278,28 @@ subscriptions model =
     let
         { current } =
             model
+
+        base =
+            [ setLatestSolves SetLatestSolves
+            ]
     in
         if isInspecting current then
-            Sub.batch
-                [ Time.every (1 * millisecond) TickInspection
-                , Keyboard.ups KeyStartSolve
-                ]
+            Sub.batch <|
+                base
+                    ++ [ Time.every (1 * millisecond) TickInspection
+                       , Keyboard.ups KeyStartSolve
+                       ]
         else if isSolving current then
-            Sub.batch
-                [ Time.every (1 * millisecond) TickSolve
-                , Keyboard.downs KeyStopSolve
-                ]
+            Sub.batch <|
+                base
+                    ++ [ Time.every (1 * millisecond) TickSolve
+                       , Keyboard.downs KeyStopSolve
+                       ]
         else
-            Sub.batch
-                [ Keyboard.downs KeyStartInspection
-                ]
+            Sub.batch <|
+                base
+                    ++ [ Keyboard.downs KeyStartInspection
+                       ]
 
 
 { class } =
