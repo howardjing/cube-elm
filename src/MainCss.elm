@@ -131,7 +131,7 @@ css =
             ]
         , ((.) SolvesList)
             [ margin zero
-            , padding4 (px 0) (px 0) (px 0) (px 16)
+            , padding4 (px 0) (px 0) (px 0) (px 20)
             ]
         , ((.) SolvesListStats)
             [ padding2 (px 20) zero
