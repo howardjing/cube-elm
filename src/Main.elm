@@ -530,7 +530,7 @@ view model =
                     [ class [ Styles.Button ]
                     , onMouseDown recordStartInspection
                     ]
-                    [ text "Hold space to start inspecting" ]
+                    [ text "Press and hold space to start inspecting" ]
 
         timer millis =
             div
