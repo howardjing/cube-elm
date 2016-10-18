@@ -17,27 +17,33 @@ var app = Elm.Main.embed(document.querySelector('#main'));
 
 // set up ports
 app.ports.requestLatestSolves.subscribe(function () {
-    latestSolves()
-      .then(function (solves) {
-        app.ports.setLatestSolves.send(solves);
-      });
+    findLatestSolves()
+      .then(sendSolves);
 });
 
 app.ports.createSolve.subscribe(function (solve) {
   db.solves
     .add(solve)
-    .then(function () {
-      return latestSolves();
-    })
-    .then(function (solves) {
-      app.ports.setLatestSolves.send(solves);
-    });
+    .then(findLatestSolves)
+    .then(sendSolves);
 });
 
-function latestSolves() {
+app.ports.requestDeleteSolve.subscribe(function (id) {
+  db.solves
+    .delete(id)
+    .then(findLatestSolves)
+    .then(sendSolves);
+});
+
+// helper functions
+function findLatestSolves() {
   return db.solves
     .orderBy('start')
     .reverse()
     .limit(12)
     .toArray();
+}
+
+function sendSolves(solves) {
+  app.ports.setLatestSolves.send(solves);
 }

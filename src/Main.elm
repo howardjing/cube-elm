@@ -1,6 +1,6 @@
 port module Main exposing (main)
 
-import Html exposing (div, button, text, h3, ul, ol, li)
+import Html exposing (div, button, text, h3, ul, ol, li, span)
 import Html.Events exposing (onMouseDown, onMouseUp, onClick)
 import Time exposing (Time, millisecond)
 import Task exposing (Task)
@@ -28,6 +28,9 @@ main =
 port requestLatestSolves : () -> Cmd msg
 
 
+port requestDeleteSolve : Int -> Cmd msg
+
+
 port createSolve : Json.Decode.Value -> Cmd msg
 
 
@@ -43,7 +46,8 @@ type alias CurrentSolve =
 
 
 type alias Solve =
-    { start : Time
+    { id : Maybe Int
+    , start : Time
     , inspectionTime : Float
     , solveTime : Float
     , scramble : List Move
@@ -194,8 +198,9 @@ moveToJson move =
 
 solveDecoder : Json.Decode.Decoder Solve
 solveDecoder =
-    Json.Decode.object5
+    Json.Decode.object6
         Solve
+        ("id" := (Json.Decode.maybe Json.Decode.int))
         ("start" := Json.Decode.float)
         ("inspectionTime" := Json.Decode.float)
         ("solveTime" := Json.Decode.float)
@@ -255,6 +260,7 @@ type Msg
     | Scramble Float
     | RequestLatestSolves
     | SetLatestSolves (List Solve)
+    | RequestDeleteSolve Solve
 
 
 perform : Msg -> Cmd Msg
@@ -273,7 +279,8 @@ finalizeSolve model =
         { current, scramble } =
             model
     in
-        { start = Maybe.withDefault 0 current.start
+        { id = Nothing
+        , start = Maybe.withDefault 0 current.start
         , inspectionTime = Maybe.withDefault 0 current.inspectionTime
         , solveTime = Maybe.withDefault 0 current.solveTime
         , scramble = Maybe.withDefault [] scramble
@@ -343,6 +350,14 @@ update msg model =
 
         RequestLatestSolves ->
             ( model, requestLatestSolves () )
+
+        RequestDeleteSolve solve ->
+            case solve.id of
+                Just id ->
+                    ( model, requestDeleteSolve id )
+
+                _ ->
+                    ( model, Cmd.none )
 
         SetLatestSolves solves ->
             ( { model | solves = solves }, Cmd.none )
@@ -633,7 +648,7 @@ view model =
         renderSolves : List Solve -> Html.Html Msg
         renderSolves list =
             let
-                solves =
+                solveTimes =
                     list
                         |> List.take 12
                         |> List.map .solveTime
@@ -654,21 +669,29 @@ view model =
                             [ text "Previous Solves" ]
                         , ol
                             [ class [ Styles.SolvesList ] ]
-                            (List.map
-                                (\solve ->
+                            (List.map2
+                                (\solve solveTime ->
                                     li []
-                                        [ Just solve
-                                            |> elapsedTime
-                                            |> text
+                                        [ span []
+                                            [ Just solveTime
+                                                |> elapsedTime
+                                                |> text
+                                            ]
+                                        , span
+                                            [ class [ Styles.DeleteSolve ]
+                                            , onClick (RequestDeleteSolve solve)
+                                            ]
+                                            [ text "x" ]
                                         ]
                                 )
-                                solves
+                                list
+                                solveTimes
                             )
                         , div
                             [ class [ Styles.SolvesListStats ] ]
                             [ div
                                 [ class [] ]
-                                [ solves
+                                [ solveTimes
                                     |> List.minimum
                                     |> elapsedTime
                                     |> (++) "min: "
@@ -676,7 +699,7 @@ view model =
                                 ]
                             , div
                                 [ class [] ]
-                                [ solves
+                                [ solveTimes
                                     |> avg
                                     |> elapsedTime
                                     |> (++) "avg: "

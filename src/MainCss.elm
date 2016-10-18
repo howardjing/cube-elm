@@ -66,6 +66,7 @@ type CssClasses
     | SolvesListContainer
     | SolvesList
     | SolvesListStats
+    | DeleteSolve
       -- scramble
     | ScrambleContainer
     | Scramble
@@ -135,6 +136,10 @@ css =
             ]
         , ((.) SolvesListStats)
             [ padding2 (px 20) zero
+            ]
+        , ((.) DeleteSolve)
+            [ padding4 (px 0) (px 0) (px 0) (px 10)
+            , cursor pointer
             ]
           -- Scramble
         , ((.) ScrambleContainer)
