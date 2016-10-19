@@ -1,3 +1,5 @@
+var DashboardPlugin = require('webpack-dashboard/plugin');
+
 module.exports = {
   entry: './src/index.js',
 
@@ -10,6 +12,10 @@ module.exports = {
     modulesDirectories: ['node_modules'],
     extensions: ['', '.js', '.elm'],
   },
+
+  plugins: [
+    new DashboardPlugin()
+  ],
 
   module: {
     loaders: [
