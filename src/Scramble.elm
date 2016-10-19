@@ -13,35 +13,15 @@
 -}
 
 
-module Scramble exposing (Move(..), scramble)
+module Scramble exposing (scramble)
 
 import Random exposing (Generator, Seed, int, step)
 import Array exposing (Array)
+import Move exposing (Move(..))
 
 
 type alias Moves =
     ( Move, Int )
-
-
-type Move
-    = F
-    | B
-    | U
-    | D
-    | L
-    | R
-    | F2
-    | B2
-    | U2
-    | D2
-    | L2
-    | R2
-    | F'
-    | B'
-    | U'
-    | D'
-    | L'
-    | R'
 
 
 nextMove : Maybe Move -> Generator Moves
