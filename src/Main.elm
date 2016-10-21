@@ -517,8 +517,31 @@ view model =
             let
                 solveTimes =
                     list
-                        |> List.take 12
                         |> List.map .solveTime
+
+                minEl =
+                    div
+                        [ class [] ]
+                        [ solveTimes
+                            |> List.minimum
+                            |> elapsedTime
+                            |> (++) "min: "
+                            |> text
+                        ]
+
+                avgEl limit times =
+                    let
+                        n =
+                            min limit (List.length times)
+                    in
+                        div
+                            []
+                            [ (List.take n times)
+                                |> avg
+                                |> elapsedTime
+                                |> (++) ("avg " ++ (toString n) ++ ": ")
+                                |> text
+                            ]
             in
                 if List.length list == 0 then
                     div [] []
@@ -553,26 +576,24 @@ view model =
                                         ]
                                 )
                                 list
-                                solveTimes
+                                (List.take 12 solveTimes)
                             )
                         , div
-                            [ class [ Styles.SolvesListStats ] ]
+                            []
                             [ div
-                                [ class [] ]
-                                [ solveTimes
-                                    |> List.minimum
-                                    |> elapsedTime
-                                    |> (++) "min: "
-                                    |> text
-                                ]
-                            , div
-                                [ class [] ]
-                                [ solveTimes
-                                    |> avg
-                                    |> elapsedTime
-                                    |> (++) "avg: "
-                                    |> text
-                                ]
+                                [ class [ Styles.SolvesListStats ] ]
+                                ([ minEl ]
+                                    ++ List.filterMap
+                                        (\n ->
+                                            if n <= List.length solveTimes then
+                                                Just (avgEl n solveTimes)
+                                            else
+                                                Nothing
+                                        )
+                                        [ 5, 12, 100, 200 ]
+                                    ++ [ (div [] [ text ("total: " ++ toString (List.length list)) ])
+                                       ]
+                                )
                             ]
                         ]
     in

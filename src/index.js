@@ -36,11 +36,12 @@ app.ports.requestDeleteSolve.subscribe(function (id) {
 });
 
 // helper functions
-function findLatestSolves() {
+function findLatestSolves(limit = 200) {
+  const truncated = limit > 200 ? 200 : limit;
   return db.solves
     .orderBy('start')
     .reverse()
-    .limit(12)
+    .limit(limit)
     .toArray();
 }
 
