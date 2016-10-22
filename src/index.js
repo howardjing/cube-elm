@@ -41,7 +41,7 @@ function findLatestSolves(limit = 200) {
   return db.solves
     .orderBy('start')
     .reverse()
-    .limit(limit)
+    .limit(truncated)
     .toArray();
 }
 
